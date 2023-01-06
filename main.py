@@ -13,6 +13,24 @@ async def get_character(id):
     return person
 
 
+async def delete_url(urls, key):
+    url_data = []
+    session = ClientSession()
+    if type(urls) == list:
+        for url in urls:
+            response = await session.get(url)
+            data = await response.json()
+            keys = list(data.values())
+            url_data.append(keys[0])
+    else:
+        response = await session.get(urls)
+        data = await response.json()
+        keys = list(data.values())
+        url_data.append(keys[0])
+    await session.close()
+    return url_data
+
+
 async def get_people(start, end):
     for id_chunk in chunked(range(start, end), 10):
         coroutines = [get_character(i) for i in id_chunk]
@@ -21,6 +39,10 @@ async def get_people(start, end):
             if 'detail' in person:
                 pass
             else:
+                for key, value in person.items():
+                    if type(person[key]) == list or 'https' in person[key]:
+                        new_value = await delete_url(value, key)
+                        person[key] = ",".join(new_value)
                 print(person)
                 yield person
 
